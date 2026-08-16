@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Tasks = () => {
   // State for tasks
-  const [tasks, setTasks] = useState([
+  const initialTasks = [
     {
       id: 1,
       title: "Design homepage mockup",
@@ -31,7 +31,9 @@ const Tasks = () => {
       status: "To Do",
       priority: "High"
     }
-  ]);
+  ];
+
+  const [tasks, setTasks] = useState([]);
 
   // State for adding new task
   const [newTask, setNewTask] = useState({
@@ -49,6 +51,31 @@ const Tasks = () => {
     status: 'To Do',
     priority: 'Medium'
   });
+
+  // Load tasks from localStorage on initial render
+  useEffect(() => {
+    const SAVED_TASKS_KEY = "taskflow-tasks";
+    const savedTasks = localStorage.getItem(SAVED_TASKS_KEY);
+    if (savedTasks) {
+      try {
+        const parsed = JSON.parse(savedTasks);
+        if (Array.isArray(parsed)) {
+          setTasks(parsed);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to parse tasks from localStorage:", error);
+      }
+    }
+    // If no saved tasks or invalid data, use initial example tasks
+    setTasks(initialTasks);
+  }, []); // Empty dependency array means this effect runs once on mount
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    const SAVED_TASKS_KEY = "taskflow-tasks";
+    localStorage.setItem(SAVED_TASKS_KEY, JSON.stringify(tasks));
+  }, [tasks]); // This effect runs whenever the tasks array changes
 
   // Calculate summary counts
   const totalTasks = tasks.length;
