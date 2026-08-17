@@ -119,7 +119,7 @@ const App = () => {
   return (
     <div className="app">
       <Header />
-      <div className="container">
+      <div className="layout-body">
         <Sidebar
           activeTab={activeTab}
           onTabClick={handleTabClick}

@@ -1,209 +1,161 @@
 import React, { useState } from 'react';
 
+/* ── Badge helpers ───────────────────────────────── */
+const statusBadgeClass = (status) => {
+  switch (status) {
+    case 'Planning':    return 'badge badge-planning';
+    case 'Active':      return 'badge badge-active';
+    case 'Completed':   return 'badge badge-completed';
+    default:            return 'badge badge-low';
+  }
+};
+
+const priorityBadgeClass = (priority) => {
+  switch (priority) {
+    case 'Low':    return 'badge badge-low';
+    case 'Medium': return 'badge badge-medium';
+    case 'High':   return 'badge badge-high';
+    default:       return 'badge badge-low';
+  }
+};
+
+/* ─────────────────────────────────────────────────── */
 const Projects = ({ projects, setProjects }) => {
-  // State for adding new project
-  const [newProject, setNewProject] = useState({
-    name: '',
-    description: '',
-    status: 'Planning',
-    priority: 'Medium'
-  });
-
-  // State for editing project
+  const [newProject, setNewProject] = useState({ name: '', description: '', status: 'Planning', priority: 'Medium' });
   const [editProjectId, setEditProjectId] = useState(null);
-  const [editProject, setEditProject] = useState({
-    name: '',
-    description: '',
-    status: 'Planning',
-    priority: 'Medium'
-  });
+  const [editProject, setEditProject] = useState({ name: '', description: '', status: 'Planning', priority: 'Medium' });
 
-  // Calculate summary counts
-  const totalProjects = projects.length;
-  const activeProjects = projects.filter(project => project.status === 'Active').length;
-  const completedProjects = projects.filter(project => project.status === 'Completed').length;
+  const totalProjects     = projects.length;
+  const activeProjects    = projects.filter(p => p.status === 'Active').length;
+  const completedProjects = projects.filter(p => p.status === 'Completed').length;
 
-  // Handle input changes for new project
   const handleNewProjectChange = (e) => {
     const { name, value } = e.target;
-    setNewProject(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setNewProject(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle input changes for editing project
   const handleEditProjectChange = (e) => {
     const { name, value } = e.target;
-    setEditProject(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setEditProject(prev => ({ ...prev, [name]: value }));
   };
 
-  // Add new project
   const addProject = (e) => {
     e.preventDefault();
-    if (newProject.name.trim() === '') return;
-
-    const project = {
-      id: Date.now(), // Simple ID generation
-      name: newProject.name,
-      description: newProject.description,
-      status: newProject.status,
-      priority: newProject.priority,
-      createdAt: Date.now()
-    };
-
-    setProjects(prev => [...prev, project]);
-    // Reset form
-    setNewProject({
-      name: '',
-      description: '',
-      status: 'Planning',
-      priority: 'Medium'
-    });
+    if (!newProject.name.trim()) return;
+    setProjects(prev => [...prev, { id: Date.now(), ...newProject, createdAt: Date.now() }]);
+    setNewProject({ name: '', description: '', status: 'Planning', priority: 'Medium' });
+    setEditProjectId(null);
   };
 
-  // Save edited project
   const saveProject = (e) => {
     e.preventDefault();
-    if (editProject.name.trim() === '') return;
-
-    setProjects(prev => prev.map(project => {
-      if (project.id === editProjectId) {
-        return {
-          ...project,
-          name: editProject.name,
-          description: editProject.description,
-          status: editProject.status,
-          priority: editProject.priority
-          // createdAt remains unchanged
-        };
-      }
-      return project;
-    }));
-
-    // Reset edit state
+    if (!editProject.name.trim()) return;
+    setProjects(prev => prev.map(p => p.id === editProjectId ? { ...p, ...editProject } : p));
     setEditProjectId(null);
-    setEditProject({
-      name: '',
-      description: '',
-      status: 'Planning',
-      priority: 'Medium'
-    });
+    setEditProject({ name: '', description: '', status: 'Planning', priority: 'Medium' });
   };
 
-  // Delete project
-  const deleteProject = (id) => {
-    setProjects(prev => prev.filter(project => project.id !== id));
-  };
+  const deleteProject = (id) => setProjects(prev => prev.filter(p => p.id !== id));
 
-  // Start editing project
   const startEditing = (id) => {
     const project = projects.find(p => p.id === id);
     setEditProjectId(id);
-    setEditProject({
-      name: project.name,
-      description: project.description,
-      status: project.status,
-      priority: project.priority
-    });
+    setEditProject({ name: project.name, description: project.description, status: project.status, priority: project.priority });
   };
 
-  // Cancel editing
   const cancelEditing = () => {
     setEditProjectId(null);
-    setEditProject({
-      name: '',
-      description: '',
-      status: 'Planning',
-      priority: 'Medium'
-    });
+    setEditProject({ name: '', description: '', status: 'Planning', priority: 'Medium' });
   };
 
+  const isFormOpen = editProjectId !== null;
+  const isAdding   = editProjectId === -1;
+
   return (
-    <div className="tasks-page">
-      {/* Page Header */}
-      <header className="tasks-header">
-        <div className="header-content">
+    <div>
+      {/* Page header */}
+      <div className="page-header">
+        <div className="page-header-text">
           <h1>Projects</h1>
-          <p className="header-description">Manage and track your projects.</p>
+          <p>Manage and track your projects</p>
         </div>
-        <button className="add-task-btn" onClick={() => setEditProjectId(-1)}>Add Project</button>
-      </header>
+        {!isFormOpen && (
+          <button
+            id="add-project-btn"
+            className="btn btn-primary"
+            onClick={() => setEditProjectId(-1)}
+          >
+            ➕ Add Project
+          </button>
+        )}
+      </div>
 
-      {/* Summary Cards */}
-      <section className="summary-cards">
-        <div className="card">
-          <h3>Total Projects</h3>
-          <p className="card-value">{totalProjects}</p>
-        </div>
-        <div className="card">
-          <h3>Active</h3>
-          <p className="card-value">{activeProjects}</p>
-        </div>
-        <div className="card">
-          <h3>Completed</h3>
-          <p className="card-value">{completedProjects}</p>
-        </div>
-      </section>
-
-      {/* Add/Edit Project Form */}
-      {editProjectId !== null && (
-        <div className="task-form">
-          <h3>{editProjectId === -1 ? 'Add New Project' : 'Edit Project'}</h3>
-          <form onSubmit={editProjectId === -1 ? addProject : saveProject} className="task-form-content">
-            <div className="form-group">
-              <label htmlFor="project-name">Project Name:</label>
-              <input
-                type="text"
-                id="project-name"
-                name="name"
-                value={editProjectId === -1 ? newProject.name : editProject.name}
-                onChange={editProjectId === -1 ? handleNewProjectChange : handleEditProjectChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="project-description">Description:</label>
-              <textarea
-                id="project-description"
-                name="description"
-                value={editProjectId === -1 ? newProject.description : editProject.description}
-                onChange={editProjectId === -1 ? handleNewProjectChange : handleEditProjectChange}
-                rows="3"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="project-status">Status:</label>
-              <select
-                id="project-status"
-                name="status"
-                value={editProjectId === -1 ? newProject.status : editProject.status}
-                onChange={editProjectId === -1 ? handleNewProjectChange : handleEditProjectChange}
-              >
-                <option value="Planning">Planning</option>
-                <option value="Active">Active</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="project-priority">Priority:</label>
-              <select
-                id="project-priority"
-                name="priority"
-                value={editProjectId === -1 ? newProject.priority : editProject.priority}
-                onChange={editProjectId === -1 ? handleNewProjectChange : handleEditProjectChange}
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
+      {/* Add / Edit form */}
+      {isFormOpen && (
+        <div className="form-panel">
+          <h2>
+            {isAdding ? '➕ Add New Project' : '✏️ Edit Project'}
+          </h2>
+          <form onSubmit={isAdding ? addProject : saveProject}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="project-name">Project Name *</label>
+                <input
+                  id="project-name"
+                  type="text"
+                  name="name"
+                  className="form-control"
+                  placeholder="Project name…"
+                  value={isAdding ? newProject.name : editProject.name}
+                  onChange={isAdding ? handleNewProjectChange : handleEditProjectChange}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="project-description">Description</label>
+                <textarea
+                  id="project-description"
+                  name="description"
+                  className="form-control"
+                  placeholder="Optional description…"
+                  rows="3"
+                  value={isAdding ? newProject.description : editProject.description}
+                  onChange={isAdding ? handleNewProjectChange : handleEditProjectChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="project-status">Status</label>
+                <select
+                  id="project-status"
+                  name="status"
+                  className="form-control"
+                  value={isAdding ? newProject.status : editProject.status}
+                  onChange={isAdding ? handleNewProjectChange : handleEditProjectChange}
+                >
+                  <option value="Planning">Planning</option>
+                  <option value="Active">Active</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="project-priority">Priority</label>
+                <select
+                  id="project-priority"
+                  name="priority"
+                  className="form-control"
+                  value={isAdding ? newProject.priority : editProject.priority}
+                  onChange={isAdding ? handleNewProjectChange : handleEditProjectChange}
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
-                {editProjectId === -1 ? 'Add Project' : 'Save Project'}
+                {isAdding ? '➕ Add Project' : '💾 Save Changes'}
               </button>
               <button type="button" className="btn btn-secondary" onClick={cancelEditing}>
                 Cancel
@@ -213,47 +165,101 @@ const Projects = ({ projects, setProjects }) => {
         </div>
       )}
 
-      {/* Project List */}
-      <section className="task-list">
-        <h2>Project List</h2>
-        <ul className="tasks-ul">
-          {projects.map(project => (
-            <li key={project.id} className="task-item">
-              <div className="task-content">
-                <div className="task-details">
-                  <h3 className="task-title">{project.name}</h3>
-                  <p className="task-description">{project.description}</p>
-                  <div className="task-meta">
-                    <span className={`status status-${project.status.toLowerCase().replace(' ', '-')}`}>
-                      {project.status}
-                    </span>
-                    <span className={`priority priority-${project.priority.toLowerCase()}`}>
-                      {project.priority}
-                    </span>
-                    <span className="created-date">
+      {/* Stat cards */}
+      {totalProjects > 0 && (
+        <div className="stats-grid stats-grid-3 mb-6">
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>Total</h3>
+              <p className="stat-card-value primary">{totalProjects}</p>
+            </div>
+            <div className="stat-card-icon primary">📁</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>Active</h3>
+              <p className="stat-card-value info">{activeProjects}</p>
+            </div>
+            <div className="stat-card-icon info">🚀</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>Completed</h3>
+              <p className="stat-card-value success">{completedProjects}</p>
+            </div>
+            <div className="stat-card-icon success">🏁</div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {totalProjects === 0 && !isFormOpen && (
+        <div className="empty-state">
+          <div className="empty-state-icon">📁</div>
+          <h2>No projects yet</h2>
+          <p>Get started by adding your first project to organise your work and achieve your goals.</p>
+          <button
+            id="add-first-project-btn"
+            className="btn btn-primary"
+            onClick={() => setEditProjectId(-1)}
+          >
+            ➕ Add First Project
+          </button>
+        </div>
+      )}
+
+      {/* Project cards grid */}
+      {totalProjects > 0 && (
+        <div>
+          <p className="section-title">📁 All Projects</p>
+          <div className="projects-grid">
+            {projects.map(project => (
+              <div
+                key={project.id}
+                id={`project-card-${project.id}`}
+                className="project-card"
+              >
+                {/* Card header */}
+                <div>
+                  <p className="project-card-name">{project.name}</p>
+                  {project.description && (
+                    <p className="project-card-desc">{project.description}</p>
+                  )}
+                </div>
+
+                {/* Badges + date */}
+                <div className="project-card-meta">
+                  <span className={statusBadgeClass(project.status)}>{project.status}</span>
+                  <span className={priorityBadgeClass(project.priority)}>{project.priority}</span>
+                  {project.createdAt && (
+                    <span className="project-card-date">
                       {new Date(project.createdAt).toLocaleDateString()}
                     </span>
-                  </div>
-                  <div className="task-actions">
-                    <button
-                      className="btn btn-sm btn-edit"
-                      onClick={() => startEditing(project.id)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-delete"
-                      onClick={() => deleteProject(project.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="project-card-actions">
+                  <button
+                    id={`edit-project-${project.id}`}
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => startEditing(project.id)}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    id={`delete-project-${project.id}`}
+                    className="btn btn-danger btn-sm"
+                    onClick={() => deleteProject(project.id)}
+                  >
+                    🗑️ Delete
+                  </button>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

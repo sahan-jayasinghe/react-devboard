@@ -1,228 +1,170 @@
 import React, { useState } from 'react';
 
+/* ── Badge helpers ───────────────────────────────── */
+const statusBadgeClass = (status) => {
+  switch (status) {
+    case 'To Do':       return 'badge badge-todo';
+    case 'In Progress': return 'badge badge-inprogress';
+    case 'Completed':   return 'badge badge-completed';
+    default:            return 'badge badge-low';
+  }
+};
+
+const priorityBadgeClass = (priority) => {
+  switch (priority) {
+    case 'Low':    return 'badge badge-low';
+    case 'Medium': return 'badge badge-medium';
+    case 'High':   return 'badge badge-high';
+    default:       return 'badge badge-low';
+  }
+};
+
+/* ─────────────────────────────────────────────────── */
 const Tasks = ({ tasks, setTasks }) => {
-  // State for adding new task
-  const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    status: 'To Do',
-    priority: 'Medium'
-  });
-
-  // State for editing task
+  const [newTask, setNewTask] = useState({ title: '', description: '', status: 'To Do', priority: 'Medium' });
   const [editTaskId, setEditTaskId] = useState(null);
-  const [editTask, setEditTask] = useState({
-    title: '',
-    description: '',
-    status: 'To Do',
-    priority: 'Medium'
-  });
+  const [editTask, setEditTask] = useState({ title: '', description: '', status: 'To Do', priority: 'Medium' });
 
-  // Calculate summary counts
-  const totalTasks = tasks.length;
-  const inProgressTasks = tasks.filter(task => task.status === 'In Progress').length;
-  const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+  const totalTasks      = tasks.length;
+  const todoTasks       = tasks.filter(t => t.status === 'To Do').length;
+  const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
+  const completedTasks  = tasks.filter(t => t.status === 'Completed').length;
 
-  // Handle input changes for new task
   const handleNewTaskChange = (e) => {
     const { name, value } = e.target;
-    setNewTask(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setNewTask(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle input changes for editing task
   const handleEditTaskChange = (e) => {
     const { name, value } = e.target;
-    setEditTask(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setEditTask(prev => ({ ...prev, [name]: value }));
   };
 
-  // Add new task
   const addTask = (e) => {
     e.preventDefault();
-    if (newTask.title.trim() === '') return;
-
-    const task = {
-      id: Date.now(), // Simple ID generation
-      title: newTask.title,
-      description: newTask.description,
-      status: newTask.status,
-      priority: newTask.priority
-    };
-
-    setTasks(prev => [...prev, task]);
-    // Reset form
-    setNewTask({
-      title: '',
-      description: '',
-      status: 'To Do',
-      priority: 'Medium'
-    });
+    if (!newTask.title.trim()) return;
+    setTasks(prev => [...prev, { id: Date.now(), ...newTask }]);
+    setNewTask({ title: '', description: '', status: 'To Do', priority: 'Medium' });
+    setEditTaskId(null);
   };
 
-  // Toggle task status
   const toggleTaskStatus = (id) => {
     setTasks(prev => prev.map(task => {
-      if (task.id === id) {
-        let newStatus = task.status;
-        if (task.status === 'To Do') {
-          newStatus = 'In Progress';
-        } else if (task.status === 'In Progress') {
-          newStatus = 'Completed';
-        } else if (task.status === 'Completed') {
-          newStatus = 'To Do';
-        }
-        return {
-          ...task,
-          status: newStatus
-        };
-      }
-      return task;
+      if (task.id !== id) return task;
+      const next = { 'To Do': 'In Progress', 'In Progress': 'Completed', 'Completed': 'To Do' };
+      return { ...task, status: next[task.status] || 'To Do' };
     }));
   };
 
-  // Delete task
-  const deleteTask = (id) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
-  };
+  const deleteTask = (id) => setTasks(prev => prev.filter(t => t.id !== id));
 
-  // Start editing task
   const startEditing = (id) => {
     const task = tasks.find(t => t.id === id);
     setEditTaskId(id);
-    setEditTask({
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority
-    });
+    setEditTask({ title: task.title, description: task.description, status: task.status, priority: task.priority });
   };
 
-  // Save edited task
   const saveTask = (e) => {
     e.preventDefault();
-    if (editTask.title.trim() === '') return;
-
-    setTasks(prev => prev.map(task => {
-      if (task.id === editTaskId) {
-        return {
-          ...task,
-          title: editTask.title,
-          description: editTask.description,
-          status: editTask.status,
-          priority: editTask.priority
-        };
-      }
-      return task;
-    }));
-
-    // Reset edit state
+    if (!editTask.title.trim()) return;
+    setTasks(prev => prev.map(t => t.id === editTaskId ? { ...t, ...editTask } : t));
     setEditTaskId(null);
-    setEditTask({
-      title: '',
-      description: '',
-      status: 'To Do',
-      priority: 'Medium'
-    });
+    setEditTask({ title: '', description: '', status: 'To Do', priority: 'Medium' });
   };
 
-  // Cancel editing
   const cancelEditing = () => {
     setEditTaskId(null);
-    setEditTask({
-      title: '',
-      description: '',
-      status: 'To Do',
-      priority: 'Medium'
-    });
+    setEditTask({ title: '', description: '', status: 'To Do', priority: 'Medium' });
   };
 
+  const isFormOpen = editTaskId !== null;
+  const isAdding   = editTaskId === -1;
+
   return (
-    <div className="tasks-page">
-      {/* Page Header */}
-      <header className="tasks-header">
-        <div className="header-content">
+    <div>
+      {/* Page header */}
+      <div className="page-header">
+        <div className="page-header-text">
           <h1>Tasks</h1>
-          <p className="header-description">Manage and track your tasks.</p>
+          <p>Manage and track your tasks</p>
         </div>
-        <button className="add-task-btn" onClick={() => setEditTaskId(-1)}>Add Task</button>
-      </header>
+        {!isFormOpen && (
+          <button
+            id="add-task-btn"
+            className="btn btn-primary"
+            onClick={() => setEditTaskId(-1)}
+          >
+            ➕ Add Task
+          </button>
+        )}
+      </div>
 
-      {/* Summary Cards */}
-      <section className="summary-cards">
-        <div className="card">
-          <h3>Total Tasks</h3>
-          <p className="card-value">{totalTasks}</p>
-        </div>
-        <div className="card">
-          <h3>In Progress</h3>
-          <p className="card-value">{inProgressTasks}</p>
-        </div>
-        <div className="card">
-          <h3>Completed</h3>
-          <p className="card-value">{completedTasks}</p>
-        </div>
-      </section>
-
-      {/* Add/Edit Task Form */}
-      {editTaskId !== null && (
-        <div className="task-form">
-          <h3>{editTaskId === -1 ? 'Add New Task' : 'Edit Task'}</h3>
-          <form onSubmit={editTaskId === -1 ? addTask : saveTask} className="task-form-content">
-            <div className="form-group">
-              <label htmlFor="task-title">Title:</label>
-              <input
-                type="text"
-                id="task-title"
-                name="title"
-                value={editTaskId === -1 ? newTask.title : editTask.title}
-                onChange={editTaskId === -1 ? handleNewTaskChange : handleEditTaskChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="task-description">Description:</label>
-              <textarea
-                id="task-description"
-                name="description"
-                value={editTaskId === -1 ? newTask.description : editTask.description}
-                onChange={editTaskId === -1 ? handleNewTaskChange : handleEditTaskChange}
-                rows="3"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="task-status">Status:</label>
-              <select
-                id="task-status"
-                name="status"
-                value={editTaskId === -1 ? newTask.status : editTask.status}
-                onChange={editTaskId === -1 ? handleNewTaskChange : handleEditTaskChange}
-              >
-                <option value="To Do">To Do</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="task-priority">Priority:</label>
-              <select
-                id="task-priority"
-                name="priority"
-                value={editTaskId === -1 ? newTask.priority : editTask.priority}
-                onChange={editTaskId === -1 ? handleNewTaskChange : handleEditTaskChange}
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
+      {/* Add / Edit form */}
+      {isFormOpen && (
+        <div className="form-panel">
+          <h2>
+            {isAdding ? '➕ Add New Task' : '✏️ Edit Task'}
+          </h2>
+          <form onSubmit={isAdding ? addTask : saveTask}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="task-title">Title *</label>
+                <input
+                  id="task-title"
+                  type="text"
+                  name="title"
+                  className="form-control"
+                  placeholder="Task title…"
+                  value={isAdding ? newTask.title : editTask.title}
+                  onChange={isAdding ? handleNewTaskChange : handleEditTaskChange}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="task-description">Description</label>
+                <textarea
+                  id="task-description"
+                  name="description"
+                  className="form-control"
+                  placeholder="Optional description…"
+                  rows="3"
+                  value={isAdding ? newTask.description : editTask.description}
+                  onChange={isAdding ? handleNewTaskChange : handleEditTaskChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="task-status">Status</label>
+                <select
+                  id="task-status"
+                  name="status"
+                  className="form-control"
+                  value={isAdding ? newTask.status : editTask.status}
+                  onChange={isAdding ? handleNewTaskChange : handleEditTaskChange}
+                >
+                  <option value="To Do">To Do</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="task-priority">Priority</label>
+                <select
+                  id="task-priority"
+                  name="priority"
+                  className="form-control"
+                  value={isAdding ? newTask.priority : editTask.priority}
+                  onChange={isAdding ? handleNewTaskChange : handleEditTaskChange}
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
-                {editTaskId === -1 ? 'Add Task' : 'Save Task'}
+                {isAdding ? '➕ Add Task' : '💾 Save Changes'}
               </button>
               <button type="button" className="btn btn-secondary" onClick={cancelEditing}>
                 Cancel
@@ -232,51 +174,121 @@ const Tasks = ({ tasks, setTasks }) => {
         </div>
       )}
 
-      {/* Task List */}
-      <section className="task-list">
-        <h2>Task List</h2>
-        <ul className="tasks-ul">
-          {tasks.map(task => (
-            <li key={task.id} className="task-item">
-              <div className="task-content">
-                <div className="task-checkbox">
+      {/* Stat cards (only when tasks exist) */}
+      {totalTasks > 0 && (
+        <div className="stats-grid mb-6">
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>Total</h3>
+              <p className="stat-card-value primary">{totalTasks}</p>
+            </div>
+            <div className="stat-card-icon primary">📋</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>To Do</h3>
+              <p className="stat-card-value warning">{todoTasks}</p>
+            </div>
+            <div className="stat-card-icon warning">⏳</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>In Progress</h3>
+              <p className="stat-card-value info">{inProgressTasks}</p>
+            </div>
+            <div className="stat-card-icon info">🔄</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-info">
+              <h3>Completed</h3>
+              <p className="stat-card-value success">{completedTasks}</p>
+            </div>
+            <div className="stat-card-icon success">✅</div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {totalTasks === 0 && !isFormOpen && (
+        <div className="empty-state">
+          <div className="empty-state-icon">📋</div>
+          <h2>No tasks yet</h2>
+          <p>Get started by adding your first task to stay organised and productive.</p>
+          <button
+            id="add-first-task-btn"
+            className="btn btn-primary"
+            onClick={() => setEditTaskId(-1)}
+          >
+            ➕ Add First Task
+          </button>
+        </div>
+      )}
+
+      {/* Task list */}
+      {totalTasks > 0 && (
+        <div>
+          <p className="section-title">📋 All Tasks</p>
+          <div className="list-container">
+            {tasks.map(task => (
+              <div
+                key={task.id}
+                id={`task-item-${task.id}`}
+                className="list-item"
+              >
+                {/* Checkbox */}
+                <div className="list-item-checkbox">
                   <input
                     type="checkbox"
+                    id={`task-check-${task.id}`}
                     checked={task.status === 'Completed'}
                     onChange={() => toggleTaskStatus(task.id)}
+                    title="Cycle task status"
                   />
                 </div>
-                <div className="task-details">
-                  <h3 className="task-title">{task.title}</h3>
-                  <p className="task-description">{task.description}</p>
-                  <div className="task-meta">
-                    <span className={`status status-${task.status.toLowerCase().replace(' ', '-')}`}>
-                      {task.status}
-                    </span>
-                    <span className={`priority priority-${task.priority.toLowerCase()}`}>
-                      {task.priority}
-                    </span>
+
+                {/* Body */}
+                <div className="list-item-body">
+                  <div className="list-item-header">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="list-item-title" style={{ textDecoration: task.status === 'Completed' ? 'line-through' : 'none', opacity: task.status === 'Completed' ? 0.6 : 1 }}>
+                        {task.title}
+                      </p>
+                      {task.description && (
+                        <p className="list-item-desc">{task.description}</p>
+                      )}
+                    </div>
+                    {/* Actions */}
+                    <div className="list-item-actions">
+                      <button
+                        id={`edit-task-${task.id}`}
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => startEditing(task.id)}
+                        title="Edit task"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        id={`delete-task-${task.id}`}
+                        className="btn btn-danger btn-sm"
+                        onClick={() => deleteTask(task.id)}
+                        title="Delete task"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
-                  <div className="task-actions">
-                    <button
-                      className="btn btn-sm btn-edit"
-                      onClick={() => startEditing(task.id)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-delete"
-                      onClick={() => deleteTask(task.id)}
-                    >
-                      Delete
-                    </button>
+
+                  {/* Badges */}
+                  <div className="list-item-meta">
+                    <span className={statusBadgeClass(task.status)}>{task.status}</span>
+                    <span className={priorityBadgeClass(task.priority)}>{task.priority}</span>
                   </div>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

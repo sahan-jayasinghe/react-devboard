@@ -1,39 +1,33 @@
 import React from 'react';
 
+const navItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: '⊞' },
+  { id: 'tasks',     label: 'Tasks',     icon: '✓' },
+  { id: 'projects',  label: 'Projects',  icon: '◈' },
+];
+
 const Sidebar = ({ activeTab, onTabClick }) => {
   return (
     <aside className="sidebar">
-      <nav className="sidebar-nav">
-        <ul>
-          <li>
-            <a
-              href="#dashboard"
-              className={activeTab === 'dashboard' ? 'active' : ''}
-              onClick={() => onTabClick('dashboard')}
+      <span className="sidebar-section-label">Navigation</span>
+      <ul className="sidebar-nav">
+        {navItems.map(item => (
+          <li key={item.id}>
+            <button
+              className={`sidebar-link${activeTab === item.id ? ' active' : ''}`}
+              onClick={() => onTabClick(item.id)}
+              aria-current={activeTab === item.id ? 'page' : undefined}
             >
-              Dashboard
-            </a>
+              <span className="sidebar-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
           </li>
-          <li>
-            <a
-              href="#tasks"
-              className={activeTab === 'tasks' ? 'active' : ''}
-              onClick={() => onTabClick('tasks')}
-            >
-              Tasks
-            </a>
-          </li>
-          <li>
-            <a
-              href="#projects"
-              className={activeTab === 'projects' ? 'active' : ''}
-              onClick={() => onTabClick('projects')}
-            >
-              Projects
-            </a>
-          </li>
-        </ul>
-      </nav>
+        ))}
+      </ul>
+
+      <div className="sidebar-footer">
+        v1.0.0
+      </div>
     </aside>
   );
 };
