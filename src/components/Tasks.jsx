@@ -1,40 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-const Tasks = () => {
-  // State for tasks
-  const initialTasks = [
-    {
-      id: 1,
-      title: "Design homepage mockup",
-      description: "Create wireframes and high-fidelity designs for the new homepage",
-      status: "In Progress",
-      priority: "High"
-    },
-    {
-      id: 2,
-      title: "Update dependencies",
-      description: "Update all npm packages to their latest versions",
-      status: "To Do",
-      priority: "Medium"
-    },
-    {
-      id: 3,
-      title: "Write API documentation",
-      description: "Document all endpoints for the new user management API",
-      status: "Completed",
-      priority: "Low"
-    },
-    {
-      id: 4,
-      title: "Fix mobile navigation bug",
-      description: "Resolve issue with hamburger menu not closing on iOS",
-      status: "To Do",
-      priority: "High"
-    }
-  ];
-
-  const [tasks, setTasks] = useState([]);
-
+const Tasks = ({ tasks, setTasks }) => {
   // State for adding new task
   const [newTask, setNewTask] = useState({
     title: '',
@@ -51,31 +17,6 @@ const Tasks = () => {
     status: 'To Do',
     priority: 'Medium'
   });
-
-  // Load tasks from localStorage on initial render
-  useEffect(() => {
-    const SAVED_TASKS_KEY = "taskflow-tasks";
-    const savedTasks = localStorage.getItem(SAVED_TASKS_KEY);
-    if (savedTasks) {
-      try {
-        const parsed = JSON.parse(savedTasks);
-        if (Array.isArray(parsed)) {
-          setTasks(parsed);
-          return;
-        }
-      } catch (error) {
-        console.error("Failed to parse tasks from localStorage:", error);
-      }
-    }
-    // If no saved tasks or invalid data, use initial example tasks
-    setTasks(initialTasks);
-  }, []); // Empty dependency array means this effect runs once on mount
-
-  // Save tasks to localStorage whenever they change
-  useEffect(() => {
-    const SAVED_TASKS_KEY = "taskflow-tasks";
-    localStorage.setItem(SAVED_TASKS_KEY, JSON.stringify(tasks));
-  }, [tasks]); // This effect runs whenever the tasks array changes
 
   // Calculate summary counts
   const totalTasks = tasks.length;
@@ -127,9 +68,17 @@ const Tasks = () => {
   const toggleTaskStatus = (id) => {
     setTasks(prev => prev.map(task => {
       if (task.id === id) {
+        let newStatus = task.status;
+        if (task.status === 'To Do') {
+          newStatus = 'In Progress';
+        } else if (task.status === 'In Progress') {
+          newStatus = 'Completed';
+        } else if (task.status === 'Completed') {
+          newStatus = 'To Do';
+        }
         return {
           ...task,
-          status: task.status === 'Completed' ? 'To Do' : 'Completed'
+          status: newStatus
         };
       }
       return task;
